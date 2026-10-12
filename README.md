@@ -31,18 +31,23 @@ recovery setup until you are satisfied with the tool. Recovery is not guaranteed
 
 ## Run
 
-On NixOS:
+With Nix, from **any directory** (replace the path with your checkout):
 
 ```sh
-nix-shell
-python -m msi_flash info
-python -m msi_flash inspect firmware/MSI_MPG321URX_V021_7F69.bin
+nix run /home/phfroidmont/Projects/msi-monitor-flash -- info
+nix run /home/phfroidmont/Projects/msi-monitor-flash -- inspect /path/to/firmware.bin
 ```
 
-For a standalone Nix launcher: `nix-build` creates
-`result/bin/msi-monitor-flash`. Its closure includes only the original Python
-code, Python/PyUSB and libusb, **not** captures, calibration backups, firmware or
-MSI binaries.
+From the checkout, use `nix run . -- info`. Firmware and backup paths are relative
+to the directory you run the command from, not the checkout.
+
+The flake provides a default app/package, a named `msi-monitor-flash` app/package,
+a development shell (`nix develop`) and checks (`nix flake check`), with nixpkgs
+pinned in `flake.lock`. Linux x86_64 and aarch64 outputs are available.
+
+`nix build /path/to/checkout` creates `result/bin/msi-monitor-flash`. Its closure
+includes only the original Python code, Python/PyUSB and libusb, **not** captures,
+calibration backups, firmware or MSI binaries.
 
 Elsewhere: Python 3.10+, PyUSB and libusb 1.0. Install PyUSB in a virtual environment,
 and run the same `python -m msi_flash` commands from this directory (or install the
@@ -84,7 +89,7 @@ firmware or change SPI protection bits.
 ```sh
 mkdir -p backups
 systemd-inhibit --what=idle:sleep --why='Inspect monitor ISP' \
-  python -m msi_flash probe-isp --backup backups/before-probe.json
+  nix run /path/to/checkout -- probe-isp --backup backups/before-probe.json
 ```
 
 ### Flash
@@ -99,7 +104,7 @@ systemd-inhibit --what=idle:sleep --why='Inspect monitor ISP' \
 
 ```sh
 systemd-inhibit --what=idle:sleep --why='Monitor firmware update' \
-  python -m msi_flash flash firmware/MSI_MPG321URX_V021_7F69.bin \
+  nix run /path/to/checkout -- flash firmware/MSI_MPG321URX_V021_7F69.bin \
     --backup backups/before-flash.json --yes
 ```
 
@@ -118,7 +123,9 @@ reset its OSD settings, and reapply your picture settings.
 ## Tests and evidence
 
 ```sh
-nix-shell --run 'ruff check msi_flash tests && python -m unittest discover -s tests -v'
+nix flake check
+nix develop -c python -m unittest discover -s tests -v
+nix develop
 python -m msi_flash compare-capture firmware/MSI_MPG321URX_V021_7F69.bin \
   captures/gi-flash-fw021.pcap
 ```
