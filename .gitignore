@@ -1,0 +1,13 @@
+# MSI binaries, decompiled MSI code and reverse-engineering scratch: never commit.
+/re/
+# USB captures contain MSI firmware bytes.
+/captures/
+# Firmware images are downloaded from MSI.
+/firmware/
+__pycache__/
+/result
+/backups/
+/.ruff_cache/
+/build/
+/dist/
+/*.egg-info/
