@@ -31,23 +31,26 @@ recovery setup until you are satisfied with the tool. Recovery is not guaranteed
 
 ## Run
 
-With Nix, from **any directory** (replace the path with your checkout):
+With Nix, run directly from a hosted flake—**no checkout required**:
 
 ```sh
-nix run /home/phfroidmont/Projects/msi-monitor-flash -- info
-nix run /home/phfroidmont/Projects/msi-monitor-flash -- inspect /path/to/firmware.bin
+nix run github:phfroidmont/msi-monitor-flash -- info
+nix run github:phfroidmont/msi-monitor-flash -- inspect /path/to/firmware.bin
 ```
 
-From the checkout, use `nix run . -- info`. Firmware and backup paths are relative
-to the directory you run the command from, not the checkout.
+Append a release tag or commit to the flake reference to pin a specific version.
+
+Firmware and backup files stay local. Their paths are relative to your current
+directory, not the fetched repository. If you already have a checkout, you can
+also run `nix run . -- info` from it.
 
 The flake provides a default app/package, a named `msi-monitor-flash` app/package,
 a development shell (`nix develop`) and checks (`nix flake check`), with nixpkgs
 pinned in `flake.lock`. Linux x86_64 and aarch64 outputs are available.
 
-`nix build /path/to/checkout` creates `result/bin/msi-monitor-flash`. Its closure
-includes only the original Python code, Python/PyUSB and libusb, **not** captures,
-calibration backups, firmware or MSI binaries.
+`nix build github:phfroidmont/msi-monitor-flash` creates `result/bin/msi-monitor-flash`.
+Its closure includes only the original Python code, Python/PyUSB and libusb,
+**not** captures, calibration backups, firmware or MSI binaries.
 
 Elsewhere: Python 3.10+, PyUSB and libusb 1.0. Install PyUSB in a virtual environment,
 and run the same `python -m msi_flash` commands from this directory (or install the
@@ -64,13 +67,16 @@ Do not use firmware for the 321URXW, 322URX, or MAG models.
 
 ### USB permissions
 
-Install `contrib/70-msi-monitor.rules` using your distribution's normal udev
-configuration, then reload the rules and reconnect the USB cable. On NixOS:
+USB permissions must be configured separately, even when running a remote flake.
+Use the rule in `contrib/70-msi-monitor.rules` with your distribution's normal udev
+configuration, then reload the rules and reconnect the USB cable. On NixOS, add
+the rule directly (no checkout needed):
 
 ```nix
 services.udev.packages = [
-  (pkgs.writeTextDir "lib/udev/rules.d/70-msi-monitor.rules"
-    (builtins.readFile /path/to/msi-monitor-flash/contrib/70-msi-monitor.rules))
+  (pkgs.writeTextDir "lib/udev/rules.d/70-msi-monitor.rules" ''
+    SUBSYSTEM=="usb", ATTR{idVendor}=="1462", ATTR{idProduct}=="3fa4", TAG+="uaccess"
+  '')
 ];
 ```
 
@@ -89,7 +95,7 @@ firmware or change SPI protection bits.
 ```sh
 mkdir -p backups
 systemd-inhibit --what=idle:sleep --why='Inspect monitor ISP' \
-  nix run /path/to/checkout -- probe-isp --backup backups/before-probe.json
+  nix run github:phfroidmont/msi-monitor-flash -- probe-isp --backup backups/before-probe.json
 ```
 
 ### Flash
@@ -103,8 +109,9 @@ systemd-inhibit --what=idle:sleep --why='Inspect monitor ISP' \
 4. Use a **new** backup filename; existing backups are never overwritten.
 
 ```sh
+mkdir -p backups
 systemd-inhibit --what=idle:sleep --why='Monitor firmware update' \
-  nix run /path/to/checkout -- flash firmware/MSI_MPG321URX_V021_7F69.bin \
+  nix run github:phfroidmont/msi-monitor-flash -- flash /path/to/firmware.bin \
     --backup backups/before-flash.json --yes
 ```
 
@@ -121,6 +128,8 @@ After success, follow MSI's instructions: unplug/reconnect the monitor's AC powe
 reset its OSD settings, and reapply your picture settings.
 
 ## Tests and evidence
+
+For development and tests, run these commands from a checkout:
 
 ```sh
 nix flake check
