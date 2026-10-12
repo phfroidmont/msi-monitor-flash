@@ -46,5 +46,6 @@ Windows capture, rather than a second unnecessary native flash.
 - `firmware/MSI_MPG321URX_V021_7F69.bin`: MSI download, SHA-256
   `4934abd71dff21492dda3b2dd630f3539ba1d6639de88f2f3684fd03d59f019e`.
 
-The Windows VM is retained as a potential recovery option, not proof that any
-failure is recoverable.
+The successful Windows VM flash establishes a potential recovery route, not
+proof that any failure is recoverable. The local VM was removed after native
+validation; captures and calibration backups were kept.
